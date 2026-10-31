@@ -17,7 +17,7 @@ def main() -> None:
     dropoff = pd.to_datetime(df["tpep_dropoff_datetime"], errors="coerce")
     df["duration_seconds"] = (dropoff - pickup).dt.total_seconds()
     df["pickup_hour"] = pickup.dt.hour
-    df["pickup_weekday"] = pickup.dt.dayofweek
+    df["pickup_weekday"] = pickup.dt.day_of_week
     features = ["pickup_hour", "pickup_weekday", "trip_distance", "passenger_count", "PULocationID"]
     df = df.dropna(subset=features + ["duration_seconds"]).copy()
     df = df.query("duration_seconds >= 60 and duration_seconds <= 7200 and trip_distance >= 0")
