@@ -1,26 +1,52 @@
 # NYC Taxi Trip Duration
 
-A real-world regression project using official NYC Taxi & Limousine Commission (TLC) trip records. It predicts completed trip duration from information intended to be available at pickup time.
+[![CI](https://github.com/Lennykipchumba33/nyc-taxi-duration/actions/workflows/ci.yml/badge.svg)](https://github.com/Lennykipchumba33/nyc-taxi-duration/actions/workflows/ci.yml)
 
-## Data source
+A leakage-controlled regression example using official NYC Taxi & Limousine Commission (TLC) trip records. The model predicts completed trip duration from features intended to be available at pickup time.
 
-Download a monthly yellow-taxi Parquet file from the [official TLC Trip Record Data page](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page). Example: `https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet`.
+## What this demonstrates
 
-TLC states that each row represents a trip by a TLC-licensed vehicle. The records are supplied by authorized technology providers, and TLC warns that accuracy and completeness are not guaranteed. The [NYC OpenData Terms of Use](https://data.cityofnewyork.us/stories/s/Terms-of-Use/k9k7-3cje/) apply to public data access. Review those terms before redistribution or production use.
+- Reproducible ingestion of Parquet data with pandas.
+- Time-derived feature engineering from pickup timestamps.
+- Chronological train/test evaluation rather than a random split.
+- Leakage controls: drop-off and post-trip fare fields are not used as predictors.
+- Regression evaluation with MAE and RMSE.
 
-Citation: New York City Taxi & Limousine Commission, “TLC Trip Record Data,” and “TLC Trip Records User Guide.”
+## Pipeline
 
-## Run
+```text
+TLC Parquet -> validation/filtering -> pickup-time features -> chronological split
+            -> HistGradientBoostingRegressor -> MAE/RMSE
+```
+
+Features used in the compact example are pickup hour, pickup weekday, trip distance, passenger count, and pickup taxi zone. Taxi-zone IDs are treated as numeric codes for demonstration; a production system should use a categorical or geographic representation.
+
+## Quick start
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 pip install -r requirements.txt
+mkdir -p data
+curl -L -o data/yellow_tripdata_2024-01.parquet \
+  https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet
 python -m src.train --input data/yellow_tripdata_2024-01.parquet --sample 50000
 ```
 
-The script uses chronological evaluation, reports MAE/RMSE, and excludes post-trip fare and drop-off fields to reduce leakage. Taxi-zone IDs are treated as numeric codes for this compact demonstration; production systems should use an appropriate categorical/geographic representation.
+The command prints the number of rows, test rows, MAE in seconds, and RMSE in seconds. CI validates the Python source without downloading the large dataset.
 
-## Limitations
+## Project layout
 
-These are observational administrative records, not a random sample of all NYC travel. Taxi zones are approximate, schemas can change, and the source warns about data quality. Do not infer causality or representativeness.
+- `src/train.py` — data loading, feature engineering, training, and evaluation.
+- `.github/workflows/ci.yml` — compile and dependency checks.
+- `requirements.txt` — runtime dependencies.
 
-The original code is MIT-licensed. Dataset access remains subject to the official source terms.
+## Data and limitations
+
+Use the official [TLC Trip Record Data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page). TLC notes that the records are supplied by authorized technology providers and that accuracy and completeness are not guaranteed. The [NYC OpenData Terms of Use](https://data.cityofnewyork.us/stories/s/Terms-of-Use/k9k7-3cje/) apply to public data access.
+
+These observational administrative records are not a random sample of all NYC travel and do not support causal claims. Schemas can change, and production use would require monitoring, geographic encoding, validation of outliers, and a documented model review process.
+
+## License and attribution
+
+The code is MIT-licensed. Dataset citation: New York City Taxi & Limousine Commission, “TLC Trip Record Data” and “TLC Trip Records User Guide.” Dataset access remains subject to the official source terms.
